@@ -20,12 +20,11 @@ def grid_to_color(grid):
 alpha = 1.0
 beta = 0.4
 gamma = 0.001
-rows = 51 # must be uneven
-columns = rows
+n = 51 # must be uneven
 
-s = np.ones((rows, columns), dtype=float)*beta
-f = np.zeros((rows, columns), dtype=float)
-s[rows // 2][columns // 2] = 1
+s = np.ones((n, n), dtype=float)*beta
+f = np.zeros((n, n), dtype=float)
+s[n // 2][n // 2] = 1
 '''
 s[rows//2][columns//2-1] = 0.7
 s[rows//2][columns//2+1] = 0.7
@@ -35,32 +34,36 @@ s[rows//2+1][columns//2+1] = 0.7
 s[rows//2-1][columns//2+1] = 0.7
 '''
 
-for k in range(25):
-    r = np.zeros((rows, columns), dtype=float)
-    nr = np.zeros((rows, columns), dtype=float)
-    for i in range(rows):
-        for j in range(columns):
-            if i==0 or j==0 or i==rows-1 or j==columns-1:
-                continue
-            elif s[i][j] >= 1 or s[i][j - 1] >= 1 or s[i][j + 1] >= 1 or s[i - 1][j] >= 1 or s[i + 1][j] >= 1 or s[i + 1][j + 1] >= 1 or s[i - 1][j + 1] >= 1:
-                r[i][j] = s[i][j]
+r = np.zeros((n, n), dtype=float)
+nr = np.zeros((n, n), dtype=float)
+av = np.zeros((n,n), dtype=float)
+for k in range(100):
+    r = r * 0
+    nr = nr * 0
+    av = av * 0
+    for i in range(n):
+        for j in range(n):
+            if s[i][j] >= 1 or s[i][(j - 1)%n] >= 1 or s[i][(j + 1)%n] >= 1 or s[(i - 1)%n][j] >= 1 or s[(i + 1)%n][j] >= 1 or s[(i + 1)%n][(j + 1)%n] >= 1 or s[(i - 1)%n][(j + 1)%n] >= 1:
+                r[i][j] = s[i][j] + gamma
             else:
                 nr[i][j] = s[i][j]
 
-    for i in range(rows):
-        for j in range(columns):
-            if i==0 or j==0 or i==rows-1 or j==columns-1:
-                continue
-            nr[i][j] = nr[i][j]/2 + nr[i][j - 1]/12 + nr[i][j + 1]/12 + nr[i - 1][j]/12 + s[i + 1][j]/12 + s[i + 1][j + 1]/12 + s[i - 1][j + 1]/12
+    for i in range(n):
+        for j in range(n):
+            av[i][j] = (nr[i][j]/2 +
+                        nr[i][(j - 1)%n]/12 +
+                        nr[i][(j + 1)%n]/12 +
+                        nr[(i - 1)%n][j]/12 +
+                        nr[(i + 1)%n][j]/12 +
+                        nr[(i + 1)%n][(j + 1)%n]/12 +
+                        nr[(i - 1)%n][(j + 1)%n]/12)
 
-    r[r>0] = r[r>0] + gamma
-    s = r + nr
-    s[s>1] = 1
+    s = r + av
     f = s >= 1
 
-    hex_centers, _ = create_hex_grid(nx=rows,
-                                     face_color=grid_to_color(f),
-                                     ny=columns,
-                                     do_plot=True)
+hex_centers, _ = create_hex_grid(nx=n,
+                                 face_color=grid_to_color(f),
+                                 ny=n,
+                                 do_plot=True)
 
 plt.show()
