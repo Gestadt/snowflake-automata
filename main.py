@@ -17,31 +17,43 @@ def grid_to_color(grid):
     return np.float32(result)
 
 
-alpha = 1.0
-beta = 0.4
+max_iterations = 200
+alpha = 1
+beta = 0.5
 gamma = 0.001
-n = 51  # must be uneven
+n = 51
 
 s = np.ones((n, n), dtype=float) * beta
 f = np.zeros((n, n), dtype=float)
 mid = int((n - 1) / 2)
 s[mid][mid] = 1
 
-r = np.zeros((n, n), dtype=float)
-nr = np.zeros((n, n), dtype=float)
-av = np.zeros((n, n), dtype=float)
-for k in range(125):
+c = np.zeros((n,n), dtype=bool) # classification (receptive (1) / non-receptive (2))
+r = np.zeros((n, n), dtype=float) # receptive grid
+nr = np.zeros((n, n), dtype=float) # non-receptive grid
+av = np.zeros((n, n), dtype=float) # average (diffusion) of non-receptive grid
+for k in range(max_iterations):
     r = r * 0
     nr = nr * 0
     av = av * 0
     for i in range(n):
         for j in range(n):
-            if i%2==0 and s[i][j] >= 1 or s[i][(j - 1) % n] >= 1 or s[i][(j + 1) % n] >= 1 or s[(i - 1) % n][j] >= 1 or \
-                    s[(i + 1) % n][j] >= 1 or s[(i + 1) % n][(j - 1) % n] >= 1 or s[(i - 1) % n][(j - 1) % n] >= 1:
-                r[i][j] = s[i][j] + gamma
-            elif i%2 !=0 and s[i][j] >= 1 or s[i][(j - 1) % n] >= 1 or s[i][(j + 1) % n] >= 1 or s[(i - 1) % n][j] >= 1 or \
-                    s[(i + 1) % n][j] >= 1 or s[(i + 1) % n][(j + 1) % n] >= 1 or s[(i - 1) % n][(j + 1) % n] >= 1:
-                r[i][j] = s[i][j] + gamma
+            if s[i][j] >= 1:
+                c[i][j] = 1
+                c[(i + 1) % n][j] = 1
+                c[(i - 1) % n][j] = 1
+                c[i][(j - 1) % n] = 1
+                c[i][(j + 1) % n] = 1
+                if i % 2 == 0:
+                    c[(i + 1) % n][(j - 1) % n] = 1
+                    c[(i - 1) % n][(j - 1) % n] = 1
+                else:
+                    c[(i + 1) % n][(j + 1) % n] = 1
+                    c[(i - 1) % n][(j + 1) % n] = 1
+    for i in range(n):
+        for j in range(n):
+            if c[i][j]:
+                r[i][j] = s[i][j]+gamma
             else:
                 nr[i][j] = s[i][j]
 
@@ -65,10 +77,10 @@ for k in range(125):
                             nr[(i - 1) % n][(j + 1) % n] * (alpha / 12))
 
     s = r + av
-    f = s >= 1
+    f[s>0.6] = s[s>0.6]
 
 hex_centers, _ = create_hex_grid(nx=n,
-                                 face_color=grid_to_color(f),
+                                 face_color=grid_to_color(f/np.max(f)),
                                  ny=n,
                                  do_plot=True)
 
