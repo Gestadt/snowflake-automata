@@ -10,28 +10,40 @@ def grid_to_color(grid):
     result = []
     for i in range(grid.shape[0]):
         for j in range(grid.shape[1]):
-            red = grid[i][j]
-            green = grid[i][j]
-            blue = grid[i][j]
-            result.append((red, green, blue))
+            red = 1
+            green = 1
+            blue = 1
+            alpha_c = 1
+            if grid[i][j] >= 1:
+                red = 0
+                green = 0
+                blue = 0
+                alpha_c = 1
+            elif grid[i][j] > beta:
+                red = 0
+                green = 0
+                blue = 0
+                alpha_c = 0.7
+
+            result.append((red, green, blue, alpha_c))
     return np.float32(result)
 
 
-max_iterations = 200
+max_iterations = 4000
 alpha = 1
-beta = 0.5
-gamma = 0.001
-n = 51
+beta = 0.3
+gamma = 0.0035
+n = 401
 
 s = np.ones((n, n), dtype=float) * beta
 f = np.zeros((n, n), dtype=float)
 mid = int((n - 1) / 2)
 s[mid][mid] = 1
 
-c = np.zeros((n,n), dtype=bool) # classification (receptive (1) / non-receptive (2))
-r = np.zeros((n, n), dtype=float) # receptive grid
-nr = np.zeros((n, n), dtype=float) # non-receptive grid
-av = np.zeros((n, n), dtype=float) # average (diffusion) of non-receptive grid
+c = np.zeros((n, n), dtype=bool)  # classification (receptive (1) / non-receptive (2))
+r = np.zeros((n, n), dtype=float)  # receptive grid
+nr = np.zeros((n, n), dtype=float)  # non-receptive grid
+av = np.zeros((n, n), dtype=float)  # average (diffusion) of non-receptive grid
 for k in range(max_iterations):
     r = r * 0
     nr = nr * 0
@@ -53,7 +65,7 @@ for k in range(max_iterations):
     for i in range(n):
         for j in range(n):
             if c[i][j]:
-                r[i][j] = s[i][j]+gamma
+                r[i][j] = s[i][j] + gamma
             else:
                 nr[i][j] = s[i][j]
 
@@ -77,11 +89,10 @@ for k in range(max_iterations):
                             nr[(i - 1) % n][(j + 1) % n] * (alpha / 12))
 
     s = r + av
-    f[s>0.6] = s[s>0.6]
 
-hex_centers, _ = create_hex_grid(nx=n,
-                                 face_color=grid_to_color(f/np.max(f)),
-                                 ny=n,
-                                 do_plot=True)
+    hex_centers, _ = create_hex_grid(nx=n,
+                                     face_color=grid_to_color(s),
+                                     ny=n,
+                                     do_plot=True, line_width=0)
 
-plt.show()
+    plt.show()
